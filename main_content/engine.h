@@ -34,4 +34,29 @@ private:
 	std::uint32_t m_mates;
 	std::size_t m_moveSource;
 	std::chrono::duration<double> m_seconds;
+
+	public:
+	Engine();
+
+	Engine(std::string_view fen);
+
+	void setState(std::string_view fen);
+
+	void step(const bool engine_side_white, const bool flip_board, const std::uint32_t depth);
+
+	void printBoard(const bool flipped) const;
+
+	int evaluate(const State& state);
+
+	int minimax(const State& state, const std::uint32_t depth, int alpha, int beta);
+
+	void iterativeMinimax(const State& state);
+
+	void printAllBoardAttacks(Color C) const;
+
+	bool inputAndParseMove(MoveList& list, Move& move);
+
+	static std::size_t squareToIndex(std::string_view square);
+
+	
 }
