@@ -71,8 +71,8 @@ bool Engine::kingInCheck(const State& state) const
 
 std::size_t Engine::squareToIndex(std::string_view square)
 {
-	const std::size_t rank{ 7 - static_cast<std::size_t>(square[1] - '1') };
-	const std::size_t file{ static_cast<std::size_t>(square[0] - 'a') };
+	const std::size_t rank{ 7 - static_cast<std::size_t>(square[1] - '1') }; // X-axis
+	const std::size_t file{ static_cast<std::size_t>(square[0] - 'a') }; //Y-axis
 
-	return rank * RANK_MAX + file;
+	return rank * RANK_MAX + file; //Final-Rank
 }
