@@ -247,7 +247,18 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 	}
 }
 
-
+void Engine::printAllBoardAttacks(Color C) const
+{
+	BitBoard b;
+	for (int i = 0; i < 64; i++)
+	{
+		if (m_moveGen.isSquareAttacked(m_state, i, C))
+		{
+			b.set(i);
+		}
+	}
+	b.print();
+}
 
 void Engine::iterativeMinimax(const State& state)
 {
@@ -261,7 +272,7 @@ void Engine::iterativeMinimax(const State& state)
 	{
 		m_depth = depth;
 		minimax(m_state, depth, INT_MIN, INT_MAX);
-		m_depthSearched = depth; //TODO: fix these vars there should only be one
+		m_depthSearched = depth; 
 		depth++;
 
 		if (!m_stopSearch)
