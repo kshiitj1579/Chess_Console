@@ -246,3 +246,27 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 		}
 	}
 }
+
+
+
+void Engine::iterativeMinimax(const State& state)
+{
+	//to implement minimax function with iterative depths 
+	std::uint32_t depth{ 1 };
+	m_searchStartTime = std::chrono::high_resolution_clock::now();
+	m_timeCheckCount = 0;
+	m_stopSearch = false;
+
+	while (!m_stopSearch)
+	{
+		m_depth = depth;
+		minimax(m_state, depth, INT_MIN, INT_MAX);
+		m_depthSearched = depth; //TODO: fix these vars there should only be one
+		depth++;
+
+		if (!m_stopSearch)
+		{
+			m_bestMoveFinal = m_bestMove;
+		}
+	}
+}
