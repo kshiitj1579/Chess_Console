@@ -281,3 +281,80 @@ void Engine::iterativeMinimax(const State& state)
 		}
 	}
 }
+
+
+bool Engine::inputAndParseMove(MoveList& list, Move& move)
+{
+	std::string input;
+	std::getline(std::cin, input);
+	//std::transform(input.begin(), input.end(), input.begin(), ::tolower);
+
+	if (input == "wk"s)
+	{
+		if (list.findCastleMove(g1))
+		{
+			move = Move::createCastleMove<Castle::WK>();
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (input == "wq"s)
+	{
+		if (list.findCastleMove(c1))
+		{
+			move = Move::createCastleMove<Castle::WQ>();
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (input == "bk"s)
+	{
+		if (list.findCastleMove(g8))
+		{
+			move = Move::createCastleMove<Castle::BK>();
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (input == "bq"s)
+	{
+		if (list.findCastleMove(c8))
+		{
+			move = Move::createCastleMove<Castle::BQ>();
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else if (input.length() == 4)
+	{
+		const std::string source{ input.substr(0, 2) };
+		const std::string target{ input.substr(2, 2) };
+		const std::size_t source_square{ Engine::squareToIndex(source) };
+		const std::size_t target_square{ Engine::squareToIndex(target) };
+
+		if (list.findMove(source_square, target_square, move))
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
