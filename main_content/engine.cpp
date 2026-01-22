@@ -446,6 +446,8 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 
 		const auto end_time = std::chrono::high_resolution_clock::now();
 		const std::chrono::duration<double> duration = end_time - start_time;
+		//this has to be double and also we have to calculate the time duration that has expired 
+		// so we subtract from the current time pooint
 
 		system("cls");
 		m_state.printBoard(flip_board, m_moveSource);
