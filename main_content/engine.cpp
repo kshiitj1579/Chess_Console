@@ -282,7 +282,6 @@ void Engine::iterativeMinimax(const State& state)
 	}
 }
 
-
 bool Engine::inputAndParseMove(MoveList& list, Move& move)
 {
 	std::string input;
@@ -358,3 +357,119 @@ bool Engine::inputAndParseMove(MoveList& list, Move& move)
 		return false;
 	}
 }
+
+void Engine::step(const bool engine_side_white, const bool flip_board, const std::uint32_t depth)
+{ //used 32 bcz dont need negative values for depth
+	m_state.printBoard(flip_board, RF::no_sqr);
+	m_depth = depth;
+
+	while (true)
+	{
+		const auto start_time = std::chrono::high_resolution_clock::now();
+
+		if (m_state.whiteToMove() == engine_side_white)
+		{ //if white to play and player side is whitee
+			if constexpr (PLAYER_PLAY_ITSELF)
+			{
+				//player move
+				MoveList list;
+				m_moveGen.generateMoves(m_state, list);
+
+				Move move;
+				while (true)
+				{
+					if (inputAndParseMove(list, move))
+					{
+						State new_state{ m_state };
+						new_state.printBoard(flip_board, m_moveSource);
+						move.print();
+
+						if (makeMove(move, new_state))
+						{
+							m_state = new_state;
+							m_moveSource = move.source();
+							break;
+						}
+					}
+
+					std::cout << "move does not exist" << std::endl;
+				}
+			}
+			else
+			{
+				//engine move
+				std::cout << "thinking" << std::endl;
+				iterativeMinimax(m_state);
+				makeMove(m_bestMoveFinal, m_state);
+
+				m_moveSource = m_bestMoveFinal.source();
+			}
+		}
+		else
+		{
+			if constexpr (ENGINE_PLAY_ITSELF)
+			{
+				//engine move
+				std::cout << "thinking" << std::endl;
+				iterativeMinimax(m_state);
+				makeMove(m_bestMoveFinal, m_state);
+
+				m_moveSource = m_bestMoveFinal.source();
+			}
+			else
+			{
+				//player move
+				MoveList list;
+				m_moveGen.generateMoves(m_state, list);
+
+				Move move;
+				while (true)
+				{
+					if (inputAndParseMove(list, move))
+					{
+						State new_state{ m_state };
+						new_state.printBoard(flip_board, m_moveSource);
+						move.print();
+
+						if (makeMove(move, new_state))
+						{
+							m_state = new_state;
+							m_moveSource = move.source();
+							break;
+						}
+					}
+
+					std::cout << "move does not exist" << std::endl;
+				}
+			}
+		}
+
+		const auto end_time = std::chrono::high_resolution_clock::now();
+		const std::chrono::duration<double> duration = end_time - start_time;
+
+		system("cls");
+		m_state.printBoard(flip_board, m_moveSource);
+
+		std::cout << "move: ";
+		m_bestMoveFinal.print();
+
+		std::cout << "depth: " << m_depthSearched << std::endl;
+		std::cout << "nodes: " << m_nodes << std::endl;
+		std::cout << "evaluations: " << m_evaluations << std::endl;
+		std::cout << "prunes: " << m_prunes << std::endl;
+		std::cout << "mates: " << m_mates << std::endl;
+		std::cout << duration.count() << " seconds" << std::endl;
+
+		m_nodes = 0;
+		m_evaluations = 0;
+		m_prunes = 0;
+		m_mates = 0;
+		m_depthSearched = 0;
+
+		m_state.flipSide();
+	}
+}
+
+
+
+
