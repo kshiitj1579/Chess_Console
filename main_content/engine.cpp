@@ -554,7 +554,7 @@ bool Engine::makeMove(const Move move, State &state) const
 				state.moveCapture(piece, source, target);
 			}
 		}
-		// quiets
+		// quiets (no capture moves)
 		else
 		{
 			if (double_pawn)
