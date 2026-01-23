@@ -260,6 +260,11 @@ void Engine::printAllBoardAttacks(Color C) const
 	b.print();
 }
 
+void Engine::printBoard(const bool flipped) const
+{
+	m_state.printBoard(flipped, RF::no_sqr);
+}
+
 void Engine::iterativeMinimax(const State &state)
 {
 	// to implement minimax function with iterative depths
