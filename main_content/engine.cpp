@@ -1,22 +1,22 @@
 #include "Engine.h"
 
 Engine::Engine()
-	: m_moveGen(), m_state(), m_bestMove(), m_evaluations(), m_nodes(), m_prunes(), m_seconds(), m_mates(), m_depth(), m_depthSearched(), m_stopSearch(), m_timeCheckCount(), 
-	m_bestMoveFinal(), m_moveSource() {}
+	: m_moveGen(), m_state(), m_bestMove(), m_evaluations(), m_nodes(), m_prunes(), m_seconds(), m_mates(), m_depth(), m_depthSearched(), m_stopSearch(), m_timeCheckCount(),
+	  m_bestMoveFinal(), m_moveSource() {}
 
 Engine::Engine(std::string_view fen)
-	: m_moveGen(), m_state(State::parse_fen(fen)), m_bestMove(), m_evaluations(), m_nodes(), m_prunes(), m_seconds(), m_mates(), m_depth(), m_depthSearched(), m_stopSearch(), 
-	m_timeCheckCount(), m_bestMoveFinal(), m_moveSource() {}
-    //giving arguments 
+	: m_moveGen(), m_state(State::parse_fen(fen)), m_bestMove(), m_evaluations(), m_nodes(), m_prunes(), m_seconds(), m_mates(), m_depth(), m_depthSearched(), m_stopSearch(),
+	  m_timeCheckCount(), m_bestMoveFinal(), m_moveSource() {}
+// giving arguments
 
 void Engine::setState(std::string_view fen)
 {
 	m_state = State::parse_fen(fen);
 }
 
-int Engine::evaluate(const State& state)
+int Engine::evaluate(const State &state)
 {
-	m_evaluations++; //no of evaluations made 
+	m_evaluations++; // no of evaluations made
 
 	int evaluation{};
 
@@ -31,17 +31,17 @@ int Engine::evaluate(const State& state)
 
 			evaluation += piece_value[piece];
 			evaluation += static_cast<int>(attack.bitCount());
-            //calculating score
-			piece_board.reset(square); //removing the least set bit 
+			// calculating score
+			piece_board.reset(square); // removing the least set bit
 		}
 	}
 
 	return evaluation;
 }
 
-bool Engine::kingInCheck(const State& state) const
+bool Engine::kingInCheck(const State &state) const
 {
-	if (state.whiteToMove()) //our move 
+	if (state.whiteToMove()) // our move
 	{
 		const std::size_t king_square = state.positions()[KING].find_1lsb();
 
@@ -55,10 +55,10 @@ bool Engine::kingInCheck(const State& state) const
 		}
 	}
 	else
-	{ //black side to move 
+	{ // black side to move
 		const std::size_t king_square = state.positions()[BKING].find_1lsb();
 
-		if (king_square == SIZE_MAX) //king in check 
+		if (king_square == SIZE_MAX) // king in check
 		{
 			return true;
 		}
@@ -71,13 +71,13 @@ bool Engine::kingInCheck(const State& state) const
 
 std::size_t Engine::squareToIndex(std::string_view square)
 {
-	const std::size_t rank{ 7 - static_cast<std::size_t>(square[1] - '1') }; // X-axis
-	const std::size_t file{ static_cast<std::size_t>(square[0] - 'a') }; //Y-axis
+	const std::size_t rank{7 - static_cast<std::size_t>(square[1] - '1')}; // X-axis
+	const std::size_t file{static_cast<std::size_t>(square[0] - 'a')};	   // Y-axis
 
-	return rank * RANK_MAX + file; //Final-Rank
+	return rank * RANK_MAX + file; // Final-Rank
 }
 
-int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, int beta)
+int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, int beta)
 {
 	m_nodes++;
 
@@ -86,17 +86,17 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 		return evaluate(state);
 	}
 
-	//time cutoff for iterative deepening
+	// time cutoff for iterative deepening
 	if (m_stopSearch)
 	{
 		return state.whiteToMove() ? INT_MAX : INT_MIN;
 	}
 
-	//only test time every 1000 nodes to avoid frequent system calls
+	// only test time every 1000 nodes to avoid frequent system calls
 	if (m_timeCheckCount >= TIME_EVALUATION_NODE_DELAY)
 	{
-		const auto now{ std::chrono::high_resolution_clock::now() };
-		const std::chrono::duration<float> duration{ now - m_searchStartTime };
+		const auto now{std::chrono::high_resolution_clock::now()};
+		const std::chrono::duration<float> duration{now - m_searchStartTime};
 
 		if (static_cast<size_t>(duration.count()) >= MAX_EVALUATION_TIME_SECONDS)
 		{
@@ -115,12 +115,12 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 		m_moveGen.generateMoves(state, moves);
 		moves.sortMoveList();
 
-		int max_eval{ INT_MIN };
-		bool anyLegalMoves{ false };
+		int max_eval{INT_MIN};
+		bool anyLegalMoves{false};
 
 		for (Move move : moves.moves())
 		{
-			State new_state{ state };
+			State new_state{state};
 
 			if (makeMove(move, new_state))
 			{
@@ -130,7 +130,7 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 
 				const int eval = minimax(new_state, depth - 1, alpha, beta);
 
-				//time cutoff for iterative deepening
+				// time cutoff for iterative deepening
 				if (m_stopSearch)
 				{
 					return state.whiteToMove() ? INT_MAX : INT_MIN;
@@ -167,13 +167,13 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 		{
 			if (kingInCheck(state))
 			{
-				//white checkmate
+				// white checkmate
 				m_mates++;
 				return INT_MIN + depth + 1;
 			}
 			else
 			{
-				//white stalemate
+				// white stalemate
 				return 0;
 			}
 		}
@@ -184,12 +184,12 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 		m_moveGen.generateMoves(state, moves);
 		moves.sortMoveList();
 
-		int min_eval{ INT_MAX };
-		bool anyLegalMoves{ false };
+		int min_eval{INT_MAX};
+		bool anyLegalMoves{false};
 
 		for (Move move : moves.moves())
 		{
-			State new_state{ state };
+			State new_state{state};
 
 			if (makeMove(move, new_state))
 			{
@@ -198,7 +198,7 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 				new_state.flipSide();
 				const int eval = minimax(new_state, depth - 1, alpha, beta);
 
-				//time cutoff for iterative deepening
+				// time cutoff for iterative deepening
 				if (m_stopSearch)
 				{
 					return state.whiteToMove() ? INT_MAX : INT_MIN;
@@ -234,13 +234,13 @@ int Engine::minimax(const State& state, const std::uint32_t depth, int alpha, in
 		{
 			if (kingInCheck(state))
 			{
-				//black checkmate
+				// black checkmate
 				m_mates++;
 				return INT_MAX - depth - 1;
 			}
 			else
 			{
-				//black stalemate
+				// black stalemate
 				return 0;
 			}
 		}
@@ -260,10 +260,10 @@ void Engine::printAllBoardAttacks(Color C) const
 	b.print();
 }
 
-void Engine::iterativeMinimax(const State& state)
+void Engine::iterativeMinimax(const State &state)
 {
-	//to implement minimax function with iterative depths 
-	std::uint32_t depth{ 1 };
+	// to implement minimax function with iterative depths
+	std::uint32_t depth{1};
 	m_searchStartTime = std::chrono::high_resolution_clock::now();
 	m_timeCheckCount = 0;
 	m_stopSearch = false;
@@ -272,7 +272,7 @@ void Engine::iterativeMinimax(const State& state)
 	{
 		m_depth = depth;
 		minimax(m_state, depth, INT_MIN, INT_MAX);
-		m_depthSearched = depth; 
+		m_depthSearched = depth;
 		depth++;
 
 		if (!m_stopSearch)
@@ -282,11 +282,11 @@ void Engine::iterativeMinimax(const State& state)
 	}
 }
 
-bool Engine::inputAndParseMove(MoveList& list, Move& move)
+bool Engine::inputAndParseMove(MoveList &list, Move &move)
 {
 	std::string input;
 	std::getline(std::cin, input);
-	//std::transform(input.begin(), input.end(), input.begin(), ::tolower);
+	// std::transform(input.begin(), input.end(), input.begin(), ::tolower);
 
 	if (input == "wk"s)
 	{
@@ -338,10 +338,10 @@ bool Engine::inputAndParseMove(MoveList& list, Move& move)
 	}
 	else if (input.length() == 4)
 	{
-		const std::string source{ input.substr(0, 2) };
-		const std::string target{ input.substr(2, 2) };
-		const std::size_t source_square{ Engine::squareToIndex(source) };
-		const std::size_t target_square{ Engine::squareToIndex(target) };
+		const std::string source{input.substr(0, 2)};
+		const std::string target{input.substr(2, 2)};
+		const std::size_t source_square{Engine::squareToIndex(source)};
+		const std::size_t target_square{Engine::squareToIndex(target)};
 
 		if (list.findMove(source_square, target_square, move))
 		{
@@ -359,7 +359,7 @@ bool Engine::inputAndParseMove(MoveList& list, Move& move)
 }
 
 void Engine::step(const bool engine_side_white, const bool flip_board, const std::uint32_t depth)
-{ //used 32 bcz dont need negative values for depth
+{ // used 32 bcz dont need negative values for depth
 	m_state.printBoard(flip_board, RF::no_sqr);
 	m_depth = depth;
 
@@ -368,10 +368,10 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 		const auto start_time = std::chrono::high_resolution_clock::now();
 
 		if (m_state.whiteToMove() == engine_side_white)
-		{ //if white to play and player side is whitee
+		{ // if white to play and player side is whitee
 			if constexpr (PLAYER_PLAY_ITSELF)
 			{
-				//player move
+				// player move
 				MoveList list;
 				m_moveGen.generateMoves(m_state, list);
 
@@ -380,7 +380,7 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 				{
 					if (inputAndParseMove(list, move))
 					{
-						State new_state{ m_state };
+						State new_state{m_state};
 						new_state.printBoard(flip_board, m_moveSource);
 						move.print();
 
@@ -397,7 +397,7 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 			}
 			else
 			{
-				//engine move
+				// engine move
 				std::cout << "thinking" << std::endl;
 				iterativeMinimax(m_state);
 				makeMove(m_bestMoveFinal, m_state);
@@ -409,7 +409,7 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 		{
 			if constexpr (ENGINE_PLAY_ITSELF)
 			{
-				//engine move
+				// engine move
 				std::cout << "thinking" << std::endl;
 				iterativeMinimax(m_state);
 				makeMove(m_bestMoveFinal, m_state);
@@ -418,7 +418,7 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 			}
 			else
 			{
-				//player move
+				// player move
 				MoveList list;
 				m_moveGen.generateMoves(m_state, list);
 
@@ -427,7 +427,7 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 				{
 					if (inputAndParseMove(list, move))
 					{
-						State new_state{ m_state };
+						State new_state{m_state};
 						new_state.printBoard(flip_board, m_moveSource);
 						move.print();
 
@@ -446,8 +446,8 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 
 		const auto end_time = std::chrono::high_resolution_clock::now();
 		const std::chrono::duration<double> duration = end_time - start_time;
-		//this has to be double and also we have to calculate the time duration that has expired 
-		// so we subtract from the current time pooint
+		// this has to be double and also we have to calculate the time duration that has expired
+		//  so we subtract from the current time pooint
 
 		system("cls");
 		m_state.printBoard(flip_board, m_moveSource);
@@ -472,6 +472,114 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 	}
 }
 
+bool Engine::makeMove(const Move move, State &state) const
+{
+	state.setEnpassantSquare(no_sqr);
 
+	// unpack
+	const std::size_t source = move.source();
+	const std::size_t target = move.target();
+	const Piece piece = move.piece();
+	const bool promoted = move.promoted();
+	const bool capture = move.capture();
+	const bool double_pawn = move.doublePawnPush();
+	const bool enpassant = move.enpassant();
+	const bool castle = move.castle();
 
+	// if statements in most efficient order for least number of branching
+	if (castle) // TODO: remove moveQuiet and moveCapture they have unnessesary loops and checks
+	{
+		if (state.whiteToMove())
+		{
+			state.moveQuiet(KING, e1, source);
 
+			if (source == g1)
+			{
+				state.moveQuiet(ROOK, h1, f1);
+				state.setCastleRights(h1);
+			}
+			else
+			{
+				state.moveQuiet(ROOK, a1, d1);
+				state.setCastleRights(a1);
+			}
+		}
+		else
+		{
+			state.moveQuiet(BKING, e8, source);
+
+			if (source == g8)
+			{
+				state.moveQuiet(BROOK, h8, f8);
+				state.setCastleRights(h8);
+			}
+			else
+			{
+				state.moveQuiet(BROOK, a8, d8);
+				state.setCastleRights(a8);
+			}
+		}
+	}
+	else
+	{
+		state.setCastleRights(source);
+		state.setCastleRights(target);
+
+		// captures
+		if (capture)
+		{
+			if (promoted)
+			{
+				state.popPiece(state.whiteToMove() ? Piece::PAWN : Piece::BPAWN, source);
+				state.popSquare(target);
+				state.setPiece(piece, target);
+			}
+			else if (enpassant)
+			{
+				if (state.whiteToMove())
+				{
+					state.popPiece(Piece::PAWN, source);
+					state.popPiece(Piece::BPAWN, target + 8);
+					state.setPiece(Piece::PAWN, target);
+				}
+				else
+				{
+					state.popPiece(Piece::BPAWN, source);
+					state.popPiece(Piece::PAWN, target - 8);
+					state.setPiece(Piece::BPAWN, target);
+				}
+			}
+			else
+			{
+				state.moveCapture(piece, source, target);
+			}
+		}
+		// quiets
+		else
+		{
+			if (double_pawn)
+			{ // we know its a pawn we dont have to loop through pieces
+				state.moveQuiet(state.whiteToMove() ? PAWN : BPAWN, source, target);
+				state.setEnpassantSquare(state.whiteToMove() ? source - 8 : source + 8);
+			}
+			else if (promoted)
+			{
+				state.popPiece(state.whiteToMove() ? Piece::PAWN : Piece::BPAWN, source);
+				state.setPiece(piece, target);
+			}
+			else
+			{
+				state.moveQuiet(piece, source, target);
+			}
+		}
+	}
+
+	if (kingInCheck(state))
+	{	// TO CHECK WHETHER KING IS IN CHECKMATE 
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
