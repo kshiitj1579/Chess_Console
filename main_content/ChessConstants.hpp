@@ -32,3 +32,21 @@ constexpr bool PLAYER_PLAY_ITSELF = false;
 
 const std::string start_position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
 const std::string tricky_position_fen = "r3k2r/p11pqpb1/bn2pnp1/2pPN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R";
+
+//MVV-LVA TABLE***
+//most valuable victim - least valuable aggressor [capturing piece][captured piece]
+constexpr std::array<std::array<std::uint8_t, PIECE_COUNT>, PIECE_COUNT> mvv_lva = {{
+	{{ 16, 26, 36, 46, 56, 66,  16, 26, 36, 46, 56, 66, }},
+	{{ 15, 25, 35, 45, 55, 65,  15, 25, 35, 45, 55, 65, }},
+	{{ 14, 24, 34, 44, 54, 64,  14, 24, 34, 44, 54, 64, }},
+	{{ 13, 23, 33, 43, 53, 63,  13, 23, 33, 43, 53, 63, }},
+	{{ 12, 22, 32, 42, 52, 62,  12, 22, 32, 42, 52, 62, }},
+	{{ 11, 21, 31, 41, 51, 61,  11, 21, 31, 41, 51, 61, }},
+
+	{{ 16, 26, 36, 46, 56, 66,  16, 26, 36, 46, 56, 66, }},
+	{{ 15, 25, 35, 45, 55, 65,  15, 25, 35, 45, 55, 65, }},
+	{{ 14, 24, 34, 44, 54, 64,  14, 24, 34, 44, 54, 64, }},
+	{{ 13, 23, 33, 43, 53, 63,  13, 23, 33, 43, 53, 63, }},
+	{{ 12, 22, 32, 42, 52, 62,  12, 22, 32, 42, 52, 62, }},
+	{{ 11, 21, 31, 41, 51, 61,  11, 21, 31, 41, 51, 61, }}
+}};
