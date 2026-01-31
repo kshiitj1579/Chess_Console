@@ -10,7 +10,7 @@ std::uint64_t BitBoard::board() const
 { 
 	return m_board; 
 }
-
+// explaining naman
 void BitBoard::setBoard(std::uint64_t board) 
 { 
 	m_board = board; 
@@ -32,4 +32,80 @@ void BitBoard::print() const
 		std::cout << std::endl;
 	}
 	std::cout << "\n     A B C D E F G H\n\n";
+}
+
+
+std::size_t BitBoard::bitCount() const
+{
+	return __popcnt64(m_board); //impliment
+}
+
+size_t BitBoard::find_1lsb() const
+{
+	unsigned long index{};
+
+	if (_BitScanForward64(&index, m_board))
+	{
+		return static_cast<std::size_t>(index);
+	}
+	else
+	{
+		return SIZE_MAX;
+	}
+}
+
+bool BitBoard::set_rf_safe(const std::size_t r, const std::size_t f)
+{
+	if (f >= 0 && f < FILE_MAX && r >= 0 && r < RANK_MAX)
+	{
+		const std::size_t index{ bitset_index(f, r) };
+		set(index);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool BitBoard::test_rf(const std::size_t r, const std::size_t f) const
+{
+	return test(bitset_index(f, r));
+}
+
+void BitBoard::set_rf(const std::size_t r, const std::size_t f)
+{
+	const std::size_t index{ bitset_index(f, r) };
+	set(index);
+}
+
+std::size_t BitBoard::bitset_index(const std::size_t x, const std::size_t y)
+{
+	return y * FILE_MAX + x;
+}
+
+void BitBoard::set(const std::size_t i)
+{
+	constexpr std::size_t single_bit{ 1 };
+	m_board |= (single_bit << i);
+}
+
+void BitBoard::reset(const std::size_t i)
+{
+	constexpr std::size_t single_bit{ 1 };
+	m_board ^= (single_bit << i);
+}
+
+bool BitBoard::test(const std::size_t i) const
+{
+	constexpr std::size_t single_bit{ 1 };
+	return (m_board & (single_bit << i)) != 0;
+}
+
+static size_t find_1lsb(std::uint64_t num)
+{
+	BitBoard board;
+	board.setBoard(num);
+
+	return board.find_1lsb();
 }
