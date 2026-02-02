@@ -166,7 +166,7 @@ void State::printBoard(const bool flipped, const std::size_t source_square) cons
 				}
 
 				const std::size_t square{ r * RANK_MAX + f };
-
+// changed the formula 
 				if (square == source_square)
 				{
 					piece_char = ' ';
