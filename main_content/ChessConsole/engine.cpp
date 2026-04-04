@@ -19,34 +19,38 @@ int Engine::evaluate(const State &state)
 	m_evaluations++; // no of evaluations made
 
 	int evaluation{};
-
+	//just means evaluation =0; protects from garbage values
 	for (std::size_t piece{}; piece < PIECE_COUNT; piece++)
 	{
 		BitBoard piece_board = state.positions()[piece];
-
-		while (piece_board.board())
+//state.positions()== is a member function call ,return 12 bitboards 
+		while (piece_board.board()) 
+		// piece_board.board(), also a member function call of Bitboard class
 		{
 			const std::size_t square = piece_board.find_1lsb();
 			const BitBoard attack = m_moveGen.getPieceAttack(piece, square, state);
-
+			//m_movegen is a object of the Movegen class and getpieceattack() returns a bitboard 
+			//containing all the squares this piece can attack from this "square"
 			evaluation += piece_value[piece];
+			//defined in chessconstant.hpp
 			evaluation += static_cast<int>(attack.bitCount());
+
 			// calculating score
-			piece_board.reset(square); // removing the least set bit
+			piece_board.reset(square); // removing the least set bit (processed piece from the board)
 		}
 	}
 
 	return evaluation;
 }
 
-bool Engine::kingInCheck(const State &state) const
+bool Engine::kingInCheck(const State &state) const //bool to know if king in check or not 
 {
-	if (state.whiteToMove()) // our move
+	if (state.whiteToMove()) // white move
 	{
-		const std::size_t king_square = state.positions()[KING].find_1lsb();
+		const std::size_t king_square = state.positions()[KING].find_1lsb(); //king square loop is bigo 1
 
-		if (king_square == SIZE_MAX)
-		{
+		if (king_square == SIZE_MAX) //defensive programming gaurd 
+		{ //king is missing from the board , something went very wrong in the prev step 
 			return true;
 		}
 		else
@@ -92,42 +96,47 @@ int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, in
 		return state.whiteToMove() ? INT_MAX : INT_MIN;
 	}
 
-	// only test time every 1000 nodes to avoid frequent system calls
+	// this loop tells enough time has passed and 1000 nodes have been evaluated , 
+	//so we can test the time now to check if it hasnt passed time limitation , 
+	// to avoid freqyenct system calls 
 	if (m_timeCheckCount >= TIME_EVALUATION_NODE_DELAY)
 	{
-		const auto now{std::chrono::high_resolution_clock::now()};
+		const auto now{std::chrono::high_resolution_clock::now()}; //time point , not a number 
 		const std::chrono::duration<float> duration{now - m_searchStartTime};
 
-		if (static_cast<size_t>(duration.count()) >= MAX_EVALUATION_TIME_SECONDS)
-		{
+		if (static_cast<size_t>(duration.count()) >= MAX_EVALUATION_TIME_SECONDS) //constexpr constant
+		{ //duration.count() == returns raw number (seconds)
 			m_stopSearch = true;
-			return state.whiteToMove() ? INT_MAX : INT_MIN;
+			return state.whiteToMove() ? INT_MAX : INT_MIN; //returns extreme value so branch is ignored to abort deeper search
 		}
 
-		m_timeCheckCount = 0;
+		m_timeCheckCount = 0; //Have to Otherwise The mtimecheckcount Will go to 1001, 1002 
+		//And everytime it will come under this if loop
 	}
 
-	m_timeCheckCount++;
+	m_timeCheckCount++; 
 
 	if (state.whiteToMove())
 	{
 		MoveList moves;
 		m_moveGen.generateMoves(state, moves);
 		moves.sortMoveList();
+		//sorting so we get the best moves first (pruning efficiency increases)
+		
+		
+		int max_eval{INT_MIN}; //best score found so far 
+		bool anyLegalMoves{false}; //for detecting checkmates / stalemates 
 
-		int max_eval{INT_MIN};
-		bool anyLegalMoves{false};
-
-		for (Move move : moves.moves())
+		for (Move move : moves.moves()) //moves.moves() will return vector<move>
 		{
-			State new_state{state};
+			State new_state{state}; // we will simulate the move on a copied board 
 
 			if (makeMove(move, new_state))
 			{
 				anyLegalMoves = true;
 
 				new_state.flipSide();
-
+				//recursion to get opponents best reply score 
 				const int eval = minimax(new_state, depth - 1, alpha, beta);
 
 				// time cutoff for iterative deepening
@@ -135,26 +144,26 @@ int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, in
 				{
 					return state.whiteToMove() ? INT_MAX : INT_MIN;
 				}
-
+				//update best score
 				if (eval > max_eval)
 				{
 					max_eval = eval;
 
 					if (depth == m_depth)
-					{
+					{ //only storing move at the root level so that we dont overwrite best moves from deeper levels, thats th job of iterativeminimax
 						m_bestMove = move;
 					}
 				}
 
 				if (alpha < eval)
 				{
-					alpha = eval;
+					alpha = eval; //best gaurenteed score for white so far 
 				}
 
-				if (beta <= alpha)
+				if (beta <= alpha) //opponent will never allow this branch , prune it 
 				{
 					m_prunes++;
-					break;
+					break; //prune
 				}
 			}
 		}
@@ -169,7 +178,7 @@ int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, in
 			{
 				// white checkmate
 				m_mates++;
-				return INT_MIN + depth + 1;
+				return INT_MIN + depth + 1; //why depth +1 , bcz faster matesz are better and slower loss is better 
 			}
 			else
 			{
@@ -178,7 +187,7 @@ int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, in
 			}
 		}
 	}
-	else
+	else //black to move 
 	{
 		MoveList moves;
 		m_moveGen.generateMoves(state, moves);
@@ -247,8 +256,8 @@ int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, in
 	}
 }
 
-void Engine::printAllBoardAttacks(Color C) const
-{
+void Engine::printAllBoardAttacks(Color C) const  //which squares are attacked by a given side (color c) ?*********
+{ // this will use pregenearted attack tables 
 	BitBoard b;
 	for (int i = 0; i < 64; i++)
 	{
@@ -260,7 +269,7 @@ void Engine::printAllBoardAttacks(Color C) const
 	b.print();
 }
 
-void Engine::printBoard(const bool flipped) const
+void Engine::printBoard(const bool flipped) const //thin wrapper
 {
 	m_state.printBoard(flipped, RF::no_sqr);
 }
@@ -276,28 +285,29 @@ void Engine::iterativeMinimax(const State &state)
 	while (!m_stopSearch)
 	{
 		m_depth = depth;
-		minimax(m_state, depth, INT_MIN, INT_MAX);
+		minimax(m_state, depth, INT_MIN, INT_MAX); //alpha is int_min and beta is int_max
 		m_depthSearched = depth;
 		depth++;
 
 		if (!m_stopSearch)
 		{
-			m_bestMoveFinal = m_bestMove;
+			m_bestMoveFinal = m_bestMove; //storing the best move 
 		}
 	}
 }
 
 bool Engine::inputAndParseMove(MoveList &list, Move &move)
-{
+{ 
 	std::string input;
-	std::getline(std::cin, input);
+	std::getline(std::cin, input);  // reads the entire user line including spaces and creates a string variable names input 
 	// std::transform(input.begin(), input.end(), input.begin(), ::tolower);
 
 	if (input == "wk"s)
 	{
-		if (list.findCastleMove(g1))
+		if (list.findCastleMove(g1))  // checks if white king-side castle is legal right now , as castling rights may be gone or path may be blocked 
+		// where g1 is kings destination square **
 		{
-			move = Move::createCastleMove<Castle::WK>();
+			move = Move::createCastleMove<Castle::WK>(); 
 			return true;
 		}
 		else
@@ -364,33 +374,36 @@ bool Engine::inputAndParseMove(MoveList &list, Move &move)
 }
 
 void Engine::step(const bool engine_side_white, const bool flip_board, const std::uint32_t depth)
-{ // used 32 bcz dont need negative values for depth
-	m_state.printBoard(flip_board, RF::no_sqr);
+{ //game controller loop
+	m_state.printBoard(flip_board, RF::no_sqr); //shows the starting position , visual context
+	//RF::no_sqr -- no move has been made so no square has to be highlighted 
 	m_depth = depth;
 
-	while (true)
+	while (true) //withput it only one move will be played , thats ehy game loop 
 	{
-		const auto start_time = std::chrono::high_resolution_clock::now();
+		const auto start_time = std::chrono::high_resolution_clock::now(); //time for a single move 
 
 		if (m_state.whiteToMove() == engine_side_white)
-		{ // if white to play and player side is whitee
-			if constexpr (PLAYER_PLAY_ITSELF)
-			{
-				// player move
-				MoveList list;
-				m_moveGen.generateMoves(m_state, list);
+		//m_state.whiteToMove() -- tells whose turn is on the board , engine_side_white== which side the engine controls 
+		{ // if white to play and engine plays is whitee
+			if constexpr (PLAYER_PLAY_ITSELF) //this allows different modes , player vs engine , player vs player , engine vs engine  
+			{//player turn
+				
+				MoveList list; 					
+				m_moveGen.generateMoves(m_state, list); //fills the list ^^
 
+				// movegen generates all thge legal moves and movelist stores them 
 				Move move;
-				while (true)
+				while (true) 
 				{
 					if (inputAndParseMove(list, move))
 					{
-						State new_state{m_state};
+						State new_state{m_state};   // we will test the move on a dummy board 
 						new_state.printBoard(flip_board, m_moveSource);
 						move.print();
 
 						if (makeMove(move, new_state))
-						{
+						{ // we have to ensure if the move doesnt leave our own king in check ****
 							m_state = new_state;
 							m_moveSource = move.source();
 							break;
@@ -404,13 +417,13 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 			{
 				// engine move
 				std::cout << "thinking" << std::endl;
-				iterativeMinimax(m_state);
-				makeMove(m_bestMoveFinal, m_state);
+				iterativeMinimax(m_state);     //deciding best move 
+				makeMove(m_bestMoveFinal, m_state);   //apllying that best move 
 
 				m_moveSource = m_bestMoveFinal.source();
 			}
 		}
-		else
+		else //black move 
 		{
 			if constexpr (ENGINE_PLAY_ITSELF)
 			{
@@ -454,17 +467,17 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 		// this has to be double and also we have to calculate the time duration that has expired
 		//  so we subtract from the current time pooint
 
-		system("cls");
+		system("cls");  //for cleaning UI
 		m_state.printBoard(flip_board, m_moveSource);
 
 		std::cout << "move: ";
 		m_bestMoveFinal.print();
 
 		std::cout << "depth: " << m_depthSearched << std::endl;
-		std::cout << "nodes: " << m_nodes << std::endl;
+		std::cout << "nodes: " << m_nodes << std::endl;   //position searched
 		std::cout << "evaluations: " << m_evaluations << std::endl;
 		std::cout << "prunes: " << m_prunes << std::endl;
-		std::cout << "mates: " << m_mates << std::endl;
+		std::cout << "mates: " << m_mates << std::endl;   //detected 
 		std::cout << duration.count() << " seconds" << std::endl;
 
 		m_nodes = 0;
@@ -472,7 +485,7 @@ void Engine::step(const bool engine_side_white, const bool flip_board, const std
 		m_prunes = 0;
 		m_mates = 0;
 		m_depthSearched = 0;
-
+//each move has fresh stats 
 		m_state.flipSide();
 	}
 }

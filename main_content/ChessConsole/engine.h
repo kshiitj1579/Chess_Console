@@ -61,4 +61,4 @@ private:
 	bool makeMove(const Move move, State& state) const;
 
 	bool kingInCheck(const State& state) const;
-}
+};
