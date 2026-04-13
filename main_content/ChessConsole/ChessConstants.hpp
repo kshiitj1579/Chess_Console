@@ -2,7 +2,7 @@
 
 #include <cstdint>
 #include <string>
-#include <array>
+#include <array> // for compile time arryas , no heap allocation 
 #include <string_view>
 #include <cstddef>
 
@@ -88,7 +88,9 @@ constexpr std::array<std::size_t, 128> create_char_to_piece()
 constexpr std::array<std::size_t, 128> char_to_piece = create_char_to_piece();
 
 constexpr std::array<char, PIECE_COUNT> piece_to_char = { 'P', 'N', 'B', 'R', 'Q', 'K', 'X', 'n', 'b', 'r', 'q', 'k' };
+//Given a piece index, get its display character.
 
+//Maps a square index to its chess coordinate name. Used in Move::print() to display moves like "e2e4"
 constexpr std::array<std::string_view, 64> index_to_rf = {
 		"a8"sv, "b8"sv, "c8"sv, "d8"sv, "e8"sv, "f8"sv, "g8"sv, "h8"sv,
 		"a7"sv, "b7"sv, "c7"sv, "d7"sv, "e7"sv, "f7"sv, "g7"sv, "h7"sv,
@@ -139,10 +141,10 @@ enum Color {
 };
 
 enum Occupancy {
-	WHITEOCC = 0,
+	WHITEOCC = 0, //all
 	BLACKOCC = 1,
 	BOTH = 2
-};
+}; // for sliding piece attack generation
 
 enum RF {
 	a8, b8, c8, d8, e8, f8, g8, h8,

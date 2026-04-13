@@ -182,7 +182,7 @@ int Engine::minimax(const State &state, const std::uint32_t depth, int alpha, in
 			}
 			else
 			{
-				// white stalemate
+				//  stalemate , neutral result
 				return 0;
 			}
 		}
@@ -304,8 +304,7 @@ bool Engine::inputAndParseMove(MoveList &list, Move &move)
 
 	if (input == "wk"s)
 	{
-		if (list.findCastleMove(g1))  // checks if white king-side castle is legal right now , as castling rights may be gone or path may be blocked 
-		// where g1 is kings destination square **
+		if (list.findCastleMove(g1))
 		{
 			move = Move::createCastleMove<Castle::WK>(); 
 			return true;
@@ -339,11 +338,12 @@ bool Engine::inputAndParseMove(MoveList &list, Move &move)
 			return false;
 		}
 	}
-	else if (input == "bq"s)
+	else if (input == "bq"s)  // checks if black queen-side castle is legal right now , as castling rights may be gone or path may be blocked 
+		// where c8 is quuens destination square **
 	{
 		if (list.findCastleMove(c8))
 		{
-			move = Move::createCastleMove<Castle::BQ>();
+			move = Move::createCastleMove<Castle::BQ>(); 
 			return true;
 		}
 		else
@@ -362,12 +362,12 @@ bool Engine::inputAndParseMove(MoveList &list, Move &move)
 		{
 			return true;
 		}
-		else
+		else //as movelist has already filtered legality 
 		{
 			return false;
 		}
 	}
-	else
+	else  //input length!=4
 	{
 		return false;
 	}
@@ -494,7 +494,7 @@ bool Engine::makeMove(const Move move, State &state) const
 {
 	state.setEnpassantSquare(no_sqr);
 
-	// unpack
+	// unpacking the move 
 	const std::size_t source = move.source();
 	const std::size_t target = move.target();
 	const Piece piece = move.piece();
@@ -504,17 +504,17 @@ bool Engine::makeMove(const Move move, State &state) const
 	const bool enpassant = move.enpassant();
 	const bool castle = move.castle();
 
-	// if statements in most efficient order for least number of branching
-	if (castle) // TODO: remove moveQuiet and moveCapture they have unnessesary loops and checks
+	// if statements in most efficient order for least number of branching , now branching is by move type and not by piece type 
+	if (castle) 
 	{
 		if (state.whiteToMove())
 		{
-			state.moveQuiet(KING, e1, source);
+			state.moveQuiet(KING, e1, source);  
 
 			if (source == g1)
 			{
-				state.moveQuiet(ROOK, h1, f1);
-				state.setCastleRights(h1);
+				state.moveQuiet(ROOK, h1, f1);  //movequiet means no capture   (h1->f1)
+				state.setCastleRights(h1);   // castle only happens once thats why setting castle right 
 			}
 			else
 			{
@@ -541,16 +541,16 @@ bool Engine::makeMove(const Move move, State &state) const
 	else
 	{
 		state.setCastleRights(source);
-		state.setCastleRights(target);
+		state.setCastleRights(target); //moving from or capturing on rook/king squares removes castling rights 
 
 		// captures
 		if (capture)
 		{
-			if (promoted)
+			if (promoted) //it is already confirmed that the pawn is being promoted , after capturing smthng in the last square 
 			{
 				state.popPiece(state.whiteToMove() ? Piece::PAWN : Piece::BPAWN, source);
-				state.popSquare(target);
-				state.setPiece(piece, target);
+				state.popSquare(target);  //not poppiece as we dont care what the piece being captured is 
+				state.setPiece(piece, target);  //piece==queen in movegen 
 			}
 			else if (enpassant)
 			{
@@ -578,12 +578,12 @@ bool Engine::makeMove(const Move move, State &state) const
 			if (double_pawn)
 			{ // we know its a pawn we dont have to loop through pieces
 				state.moveQuiet(state.whiteToMove() ? PAWN : BPAWN, source, target);
-				state.setEnpassantSquare(state.whiteToMove() ? source - 8 : source + 8);
+				state.setEnpassantSquare(state.whiteToMove() ? source - 8 : source + 8); //***
 			}
 			else if (promoted)
 			{
 				state.popPiece(state.whiteToMove() ? Piece::PAWN : Piece::BPAWN, source);
-				state.setPiece(piece, target);
+				state.setPiece(piece, target); 
 			}
 			else
 			{
