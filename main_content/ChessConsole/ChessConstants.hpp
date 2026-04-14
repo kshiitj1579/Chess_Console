@@ -87,7 +87,7 @@ constexpr std::array<std::size_t, 128> create_char_to_piece()
 }
 constexpr std::array<std::size_t, 128> char_to_piece = create_char_to_piece();
 
-constexpr std::array<char, PIECE_COUNT> piece_to_char = { 'P', 'N', 'B', 'R', 'Q', 'K', 'X', 'n', 'b', 'r', 'q', 'k' };
+constexpr std::array<char, PIECE_COUNT> piece_to_char = { 'P', 'N', 'B', 'R', 'Q', 'K', 'X', 'n', 'b', 'r', 'q', 'k' }; // State::pritnboard
 //Given a piece index, get its display character.
 
 //Maps a square index to its chess coordinate name. Used in Move::print() to display moves like "e2e4"

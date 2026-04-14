@@ -10,7 +10,7 @@
 class Random
 {
 private:
-	std::mt19937_64 m_rng;
+	std::mt19937_64 m_rng; //by Matsumoto and Nishimura
 
 public:
 	Random();
