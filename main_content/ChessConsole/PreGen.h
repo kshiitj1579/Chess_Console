@@ -12,6 +12,7 @@
 #include <bitset>
 #include <cstddef>
 
+//Builds attack lookup table
 
 class PreGen
 {
@@ -21,7 +22,7 @@ private:
 	std::array<BitBoard, MAX_BOARD_POSITIONS> m_knightAttackMasks;
 	std::array<BitBoard, MAX_BOARD_POSITIONS> m_kingAttackMasks;
 
-	// Slider Attack Masks
+	// Slider Attack Masks , indexed via magic number hashing
 	std::array<std::array<BitBoard, MAX_BISHOP_ATTACKS>, MAX_BOARD_POSITIONS> m_bishopAttackMask;
 	std::array<std::array<BitBoard, MAX_ROOK_ATTACKS>, MAX_BOARD_POSITIONS> m_rookAttackMask;
 
@@ -124,7 +125,7 @@ public:
 			return occupancy.board();
 		}
 	}
-
+//if constexpr for zero cost compile-time branching between bishop and rook behavior
 	static std::size_t indexAttackTable(const std::size_t rank, const std::size_t file);
 
 	void printMasks(Piece P) const;

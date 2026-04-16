@@ -32,9 +32,11 @@ public:
 
 	void printMoves() const;
 
-	template<MoveType M, Piece P>
+	template<MoveType M, Piece P> //non type template parameters (known at compile time)
+	//templates paramatreized by value and not type]
 	void addMove(const std::size_t source, const std::size_t target, const Piece captured_piece)
 	{
+		//moveList.addMove<MoveType::CAPTURE, Piece::KNIGHT>(source_sq, target_sq, target_piece); in movegen 
 		if constexpr (M == MoveType::CAPTURE) //TODO: restructure
 		{
 			if constexpr (P == Piece::PAWN)
@@ -48,7 +50,7 @@ public:
 				m_moves.emplace_back(source, target, P, captured_piece);
 			}
 		}
-
+//zero runtime branching , independent compile-time checks
 		if constexpr (M == MoveType::QUIET)
 		{
 			//regular quiet
@@ -79,12 +81,12 @@ public:
 		}
 	}
 
-	template <Castle C>
-	void addCastleMove()
+	template <Castle C> // C is a compile time castle enum
+	void addCastleMove() //moveList.addCastleMove<Castle::WK>(); in movegen 
 	{
 		if constexpr (C == Castle::BK)
 		{
-			m_moves.emplace_back(g8);
+			m_moves.emplace_back(g8); //kings destination square
 		}
 
 		if constexpr (C == Castle::BQ)

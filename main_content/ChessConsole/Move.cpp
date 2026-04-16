@@ -48,10 +48,11 @@ Move::Move(const std::size_t square)
 	m_data = static_cast<uint32_t>(square) 
 		| (static_cast<std::uint32_t>(single_bit) << castle_shift) 
 		| (byte_score << value_shift);
+		//square is packed into the source field but it's actually the king's destination
 }
 
 //double pawn push
-Move::Move(const std::size_t source, const std::size_t target) //arbitrary bool to call constructor
+Move::Move(const std::size_t source, const std::size_t target)
 {
 	constexpr std::uint8_t byte_score = 2;
 
@@ -66,14 +67,14 @@ Move::Move(const std::size_t source, const std::size_t target) //arbitrary bool 
 //other 
 Move::Move(const std::size_t source, const std::size_t target, const Piece piece, const Piece captured_piece)
 {
-	if (captured_piece == Piece::NO_PIECE)
+	if (captured_piece == Piece::NO_PIECE) //quiet move
 	{
 		//move score is 0
 		m_data = static_cast<uint32_t>(source)
 			| (static_cast<std::uint32_t>(target) << target_shift)
 			| (static_cast<std::uint32_t>(piece) << piece_shift);
 	}
-	else
+	else //captire move
 	{
 		//move score is mvv_lva
 		m_data = static_cast<uint32_t>(source)
@@ -87,7 +88,7 @@ Move::Move(const std::size_t source, const std::size_t target, const Piece piece
 
 Move::Move()
 	: m_data() {}
-
+//m_data() value initializes the uint32_t to 0.
 
 
 std::size_t Move::source() const
@@ -102,7 +103,7 @@ std::size_t Move::target() const
 	return target_data;
 }
 
-Piece Move::piece() const
+Piece Move::piece() const //returns an enum
 {
 	const Piece data{ static_cast<Piece>((m_data & piece_mask) >> piece_shift) };
 	return data;
@@ -140,8 +141,8 @@ std::uint32_t Move::value() const
 
 bool Move::doublePawnPush() const
 {
-	const bool castle_data{ static_cast<bool>((m_data & double_mask)) };
-	return castle_data;
+	const bool double_data{ static_cast<bool>((m_data & double_mask)) };
+	return double_data;
 }
 
 void Move::print() const
@@ -154,6 +155,7 @@ void Move::print() const
 	const bool castle_p{ castle() };
 
 	std::cout << index_to_rf[source_p] << (capture_p ? "x" : "") << index_to_rf[target_p] << " - pr:" << promoted_p << " ca:" << capture_p << " en:" << enpassant_p << " cas:" << castle_p << std::endl;
+//index to rf == Uses the lookup table from ChessConstants, returns a string view 
 }
 
 Move& Move::operator=(const Move& other)
@@ -161,3 +163,7 @@ Move& Move::operator=(const Move& other)
 	m_data = other.m_data;
 	return *this;
 }
+
+
+//Not only can the (with the encode decode method) system store the entire data abt the move in a single integer
+//But it can also sort compare and copy moves as single inetger iperations
