@@ -1,5 +1,6 @@
 //to do along with movegen.cpp
 
+//PreGen runs once at startup and pre-computes all attack lookup tables the move generator needs
 #include "PreGen.h"
 
 
@@ -15,21 +16,24 @@ PreGen::PreGen()
 
 	m_bishopBitCount(), m_rookBitCount()
 {
-	//slider masks 
+	//magic bitboards pipeline:-
+	//1) slider masks 
 	createBishopAttackMasks();
 	createRookAttackMasks();
 
-	//magics
+	//(2 ) needs (1)
 	createBishopBitCount();
 	createRookBitCount();
+	//3) (magics) needs 2
 	InitMagicNumbers();
 
 	std::cout << "Generating Tables" << std::endl;
-	//bishop and rook attacks
+	//bishop and rook attacks needs (1+2+3)
 	createBishopAttacks();
 	createRookAttacks();
 
-	//non slider attacks
+	
+	//non slider attacks (independent)
 	createPawnAttackMasks();
 	createKnightAttackMasks();
 	createKingAttackMasks();
@@ -40,28 +44,28 @@ PreGen::PreGen()
 
 // Getters
 const std::array<std::array<BitBoard, MAX_BOARD_POSITIONS>, 2>& PreGen::pawnAttacks() const
-{
-	return m_pawnAttackMasks;
+{ 
+	return m_pawnAttackMasks; //[color (2)][square (64)]
 }
 
 const std::array<BitBoard, MAX_BOARD_POSITIONS>& PreGen::knightAttacks() const
 {
-	return m_knightAttackMasks;
+	return m_knightAttackMasks; //[square (64)]
 }
 
 const std::array<BitBoard, MAX_BOARD_POSITIONS>& PreGen::kingAttacks() const
 {
-	return m_kingAttackMasks;
+	return m_kingAttackMasks; //[square (64)]
 }
 
 const std::array<std::array<BitBoard, MAX_BISHOP_ATTACKS>, MAX_BOARD_POSITIONS>& PreGen::bishopAttacks() const
 {
-	return m_bishopAttackMask;
+	return m_bishopAttackMask; //[square (64)][magic_index (512)]
 }
 
 const std::array<std::array<BitBoard, MAX_ROOK_ATTACKS>, MAX_BOARD_POSITIONS>& PreGen::rookAttacks() const
 {
-	return m_rookAttackMask;
+	return m_rookAttackMask; //[square (64)][magic_index (512)]
 }
 
 const std::array<std::uint64_t, MAX_BOARD_POSITIONS>& PreGen::bishopMagics() const
@@ -85,7 +89,7 @@ const std::array<std::size_t, MAX_BOARD_POSITIONS>& PreGen::rookBitCount() const
 }
 
 
-//Non sider piece creation
+
 
 // Non Slider Piece Creation
 void PreGen::createPawnAttackMasks()
@@ -204,6 +208,7 @@ void PreGen::createBishopAttackMasks()
 			for (r = tr - 1, f = tf - 1; r >= 1 && f >= 1; r--, f--) m_bishopRelevantBits[indexAttackTable(tr, tf)].set_rf(r, f);
 			for (r = tr - 1, f = tf + 1; r >= 1 && f <= 6; r--, f++) m_bishopRelevantBits[indexAttackTable(tr, tf)].set_rf(r, f);
 		}
+		//edge squares never change the blocking result
 	}
 }
 
@@ -240,7 +245,7 @@ void PreGen::createRookBitCount()
 	}
 }
 
-void PreGen::createBishopAttacks()
+void PreGen::createBishopAttacks() //perfect hash function, final function that combines everything ==createOccupancies,createSliderAttack
 {
 	for (std::size_t i{}; i < MAX_BOARD_POSITIONS; i++)
 	{
@@ -253,13 +258,29 @@ void PreGen::createBishopAttacks()
 			const BitBoard attack{ createSliderAttack<Piece::BISHOP>(i, occupancies[j]) };
 
 			const std::size_t magic_index{ (occupancies[j].board() * magic_number) >> (MAX_BOARD_POSITIONS - m_bishopBitCount[i]) };
+			//occupancies[j].board()=== The current board occupancy masked to only the relevant bits. 
+			//A 64-bit number with at most N bits set (where N is the number of relevant squares).
 
+
+			//right shift to keep only the top N bits of the multiplication result
+			//2^N - 1 is exactly the range of valid indices for our lookup table
 			m_bishopAttackMask[i][magic_index] = attack;
+
+			//Every one of the 512 occupancy patterns for d4 maps to a different index 0-511.
 		}
 	}
 }
 
 void PreGen::createRookAttacks()
+//For each of the 64 squares:
+
+// Enumerate all possible occupancy patterns, Get the magic number for this square (only 1 magic number per square )
+// For each occupancy pattern:
+// a. Compute the actual attack BitBoard using createSliderAttack
+// b. Compute the magic index for this occupancy
+// c. Store the attack at m_bishopAttackMask[square][magic_index]
+
+//magic number ek square ka ek hai but index ek square pr bht saare ho skte h indicating all the different occupancy patterns 
 {
 	for (std::size_t i{}; i < MAX_BOARD_POSITIONS; i++)
 	{
@@ -276,6 +297,7 @@ void PreGen::createRookAttacks()
 			m_rookAttackMask[i][magic_index] = attack;
 		}
 	}
+	//m_rookAttackMask contains the precomputed attack BitBoard for a bishop on "square"
 }
 
 
@@ -283,7 +305,7 @@ void PreGen::createRookAttacks()
 // Magic Numbers
 void PreGen::InitMagicNumbers()
 {
-	if constexpr (USING_PREGENERATED_MAGICS)
+	if constexpr (USING_PREGENERATED_MAGICS) // bool from ChessConstants.hpp (currently true)
 	{
 		std::cout << "Using Pregenerated Magics" << std::endl;
 
@@ -314,7 +336,7 @@ void PreGen::InitMagicNumbers()
 	}
 }
 
-void PreGen::createBishopMagics()
+void PreGen::createBishopMagics() //e 64-bit constant that maps every occupancy pattern to a unique array index 
 {
 	std::cout << "Generating Bishop Magics";
 
@@ -343,12 +365,19 @@ std::vector<BitBoard> PreGen::createOccupancies(const std::uint64_t mask, const 
 	std::vector<BitBoard> occupancies;
 	occupancies.reserve(num_occupancies); // Pre-allocate memory for all occupancies
 
-	for (std::uint64_t i{}; i < num_occupancies; i++)
+	//mask — the relevant bits BitBoard (which of the 64 squares are relevant)
+//num_bits — how many relevant squares (e.g., 9)
+//num_occupancies — 2^num_bits (e.g., 512)
+
+//i is from 0 to 511 (2^9)
+	for (std::uint64_t i{}; i < num_occupancies; i++) // i as a binary counter of 9 bits 
 	{
 		BitBoard occupancy{};
 		std::size_t bit_position{}; // Position of set bits in the mask
 
-		// Iterate over each square on the board
+		// The inner loop scans all 64 squares. When it finds a square that's in the mask 
+		//(a relevant square), it checks the corresponding bit in i. 
+		//If that bit is set, the square is occupied in this pattern.
 		for (std::size_t square{}; square < MAX_BOARD_POSITIONS; square++)
 		{
 			// Check if the current square is in the mask
@@ -365,7 +394,7 @@ std::vector<BitBoard> PreGen::createOccupancies(const std::uint64_t mask, const 
 
 		occupancies.push_back(occupancy);
 	}
-
+//returns a vector of all possible occupancy patterns (512 BitBoards in this case)
 	return occupancies;
 }
 
@@ -374,25 +403,20 @@ std::uint64_t PreGen::findMagicNumber(const std::size_t square, const Piece piec
 	Random rnd;
 
 	const std::uint64_t mask{ piece == Piece::BISHOP ? m_bishopRelevantBits[square].board() : m_rookRelevantBits[square].board() };
+	
 
-	const std::size_t num_bits{ static_cast<std::size_t>(__popcnt64(mask)) };
-	const std::size_t num_occupancies{ single_bit << num_bits };
+	const std::size_t num_bits{ static_cast<std::size_t>(__popcnt64(mask)) }; // no. of set bits 
+	const std::size_t num_occupancies{ single_bit << num_bits }; // 2 ^ num of set bits (2^9)
 
-	const std::vector<BitBoard> occupancies{ createOccupancies(mask, num_bits, num_occupancies) };
+	const std::vector<BitBoard> occupancies{ createOccupancies(mask, num_bits, num_occupancies) }; // creates 512 bitboards ( bishop)
 	
 	while (true)
 	{
 		const std::uint64_t magic{ rnd.next_uint64_minbits() };
 
-		//skip inappropriate magic numbers
-		/*if (__popcnt64((mask * magic) & 0xFF00000000000000ULL) < 6)
-		{
-			continue;
-		}*/
-
-		bool bad_magic{ false };
-		std::bitset<MAX_ROOK_ATTACKS> index_tracker;
-
+		bool bad_magic{ false }; //collision dteector=for each occupancy patern, to check if we have seen this magic before
+		std::bitset<MAX_ROOK_ATTACKS> index_tracker; //creates an array of 4096 bits all intiialized to 0 
+//. For each occupancy pattern, we compute the magic index
 		for (auto& occupancy : occupancies)
 		{
 			const std::size_t index{ static_cast<std::size_t>((occupancy.board() * magic) >> (MAX_BOARD_POSITIONS - num_bits)) };
@@ -405,7 +429,7 @@ std::uint64_t PreGen::findMagicNumber(const std::size_t square, const Piece piec
 			else
 			{
 				bad_magic = true;
-				break;
+				break; //need new magic number for this square 
 			}
 		}
 
@@ -417,7 +441,8 @@ std::uint64_t PreGen::findMagicNumber(const std::size_t square, const Piece piec
 }
 
 template<Piece P>
-BitBoard PreGen::createSliderAttack(const std::size_t square, const BitBoard occupancy)
+BitBoard PreGen::createSliderAttack(const std::size_t square, const BitBoard occupancy) // actual attack generator 
+// attack BitBoard is computed once using ray casting that stops when hitting an occupied square (stored at the "magic hashed index" in createrookattacks function)
 {
 	BitBoard mask;
 
@@ -433,7 +458,8 @@ BitBoard PreGen::createSliderAttack(const std::size_t square, const BitBoard occ
 		{
 			mask.set_rf(r, f);
 
-			if (occupancy.test_rf(r, f))
+			if (occupancy.test_rf(r, f)) // very square along the ray is an attack square (the piece can move there),
+			//if that square is occupied (by any friend or foe), the ray stops.
 			{
 				break;
 			}
@@ -462,7 +488,7 @@ BitBoard PreGen::createSliderAttack(const std::size_t square, const BitBoard occ
 		{
 			mask.set_rf(r, f);
 
-			if (occupancy.test_rf(r, f))
+			if (occupancy.test_rf(r, f)) //this occupancy board is created by createoccupancy function 
 			{
 				break;
 			}
@@ -570,3 +596,7 @@ std::size_t PreGen::indexAttackTable(const std::size_t rank, const std::size_t f
 	const std::size_t index{ rank * RANK_MAX + file };
 	return index;
 }
+
+//The total pre-computed data is approximately 2.3 MB,
+// dominated by the rook attack table at 2 MB,
+// which is why the project increases the default stack size to 4 MB

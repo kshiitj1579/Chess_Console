@@ -22,7 +22,7 @@ private:
 	std::array<BitBoard, MAX_BOARD_POSITIONS> m_knightAttackMasks;
 	std::array<BitBoard, MAX_BOARD_POSITIONS> m_kingAttackMasks;
 
-	// Slider Attack Masks , indexed via magic number hashing
+	// Slider Attack Masks , indexed via magic bitboard hashing
 	std::array<std::array<BitBoard, MAX_BISHOP_ATTACKS>, MAX_BOARD_POSITIONS> m_bishopAttackMask;
 	std::array<std::array<BitBoard, MAX_ROOK_ATTACKS>, MAX_BOARD_POSITIONS> m_rookAttackMask;
 
