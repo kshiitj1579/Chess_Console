@@ -31,7 +31,7 @@ constexpr bool ENGINE_PLAY_ITSELF = false;
 constexpr bool PLAYER_PLAY_ITSELF = false;
 
 const std::string start_position_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
-const std::string tricky_position_fen = "r3k2r/p11pqpb1/bn2pnp1/2pPN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R";
+const std::string tricky_position_fen = "r3k2r/p1pqpb1/bn2pnp1/2pPN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R";//perft testing
 
 //MVV-LVA TABLE***
 //most valuable victim - least valuable aggressor [capturing piece][captured piece]
@@ -68,11 +68,11 @@ enum Piece {
 	NO_PIECE = 12
 };
 
-constexpr std::array<std::size_t, 128> create_char_to_piece()
+constexpr std::array<std::size_t, 128> create_char_to_piece()//for O(1) lookup instead of O(n)
 {
 	std::array< std::size_t, 128> table = { 0 };
 	table['P'] = Piece::PAWN;
-	table['N'] = Piece::KNIGHT;
+	table['N'] = Piece::KNIGHT; //table[78]=1
 	table['B'] = Piece::BISHOP;
 	table['R'] = Piece::ROOK;
 	table['Q'] = Piece::QUEEN;
@@ -84,6 +84,7 @@ constexpr std::array<std::size_t, 128> create_char_to_piece()
 	table['q'] = Piece::BQUEEN;
 	table['k'] = Piece::BKING;
 	return table;
+	//no search, no looping
 }
 constexpr std::array<std::size_t, 128> char_to_piece = create_char_to_piece();
 
@@ -111,6 +112,7 @@ constexpr std::array<std::uint8_t, MAX_BOARD_POSITIONS> castling_rights = {
 	15, 15, 15, 15, 15, 15, 15, 15,
 	15, 15, 15, 15, 15, 15, 15, 15,
 	13, 15, 15, 15, 12, 15, 15, 14
+	//used to revike castling rights 
 };
 
 constexpr std::array<int, PIECE_COUNT> piece_value = {

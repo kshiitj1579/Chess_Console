@@ -158,12 +158,6 @@ void Move::print() const
 //index to rf == Uses the lookup table from ChessConstants, returns a string view 
 }
 
-Move& Move::operator=(const Move& other)
-{
-	m_data = other.m_data;
-	return *this;
-}
-
 
 //Not only can the (with the encode decode method) system store the entire data abt the move in a single integer
 //But it can also sort compare and copy moves as single inetger iperations

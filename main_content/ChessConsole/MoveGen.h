@@ -37,8 +37,7 @@ public:
 
 	BitBoard getRookAttack(const std::size_t square, const BitBoard occupancy) const;
 
-	template<Color C>
-	BitBoard getPawnAttack(const std::size_t square) const;
+
 
 	BitBoard getKnightAttack(const std::size_t square) const;
 
